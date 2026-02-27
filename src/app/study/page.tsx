@@ -16,12 +16,7 @@ export default function StudyPage() {
     answer: string;
     explanation: string;
   } | null>(null);
-  const [sessionStats, setSessionStats] = useState({
-    total: 0,
-    correct: 0,
-    wrong: 0,
-    confusing: 0,
-  });
+  const [sessionStats, setSessionStats] = useState({ total: 0, correct: 0, wrong: 0, confusing: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [startTime, setStartTime] = useState(0);
 
@@ -29,24 +24,14 @@ export default function StudyPage() {
     setIsLoading(true);
     const dueIds = await getDueCards(deckId || undefined);
     const newIds = await getNewCards(deckId || undefined);
-
     const allIds = [...dueIds, ...newIds.slice(0, 20)];
-
-    if (allIds.length === 0) {
-      setQueue([]);
-      setIsLoading(false);
-      return;
-    }
-
+    if (allIds.length === 0) { setQueue([]); setIsLoading(false); return; }
     const cards = await db.cards.bulkGet(allIds);
     const validCards = cards.filter(Boolean) as Card[];
-
-    // Shuffle
     for (let i = validCards.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [validCards[i], validCards[j]] = [validCards[j], validCards[i]];
     }
-
     setQueue(validCards);
     setCurrentIdx(0);
     setLastResult(null);
@@ -56,43 +41,26 @@ export default function StudyPage() {
     setStartTime(Date.now());
   }, []);
 
-  useEffect(() => {
-    db.decks.toArray().then(setDecks);
-    loadQueue();
-  }, [loadQueue]);
+  useEffect(() => { db.decks.toArray().then(setDecks); loadQueue(); }, [loadQueue]);
 
   const currentCard = queue[currentIdx];
 
-  const handleAnswer = useCallback(
-    async (userAnswer: "O" | "X" | "confusing") => {
-      if (!currentCard) return;
-
-      let result: "correct" | "wrong" | "confusing";
-      if (userAnswer === "confusing") {
-        result = "confusing";
-      } else {
-        result = userAnswer === currentCard.answer ? "correct" : "wrong";
-      }
-
-      const timeMs = Date.now() - startTime;
-      await processReview(currentCard.id, result, timeMs);
-
-      setSessionStats((prev) => ({
-        total: prev.total + 1,
-        correct: prev.correct + (result === "correct" ? 1 : 0),
-        wrong: prev.wrong + (result === "wrong" ? 1 : 0),
-        confusing: prev.confusing + (result === "confusing" ? 1 : 0),
-      }));
-
-      setLastResult({
-        correct: result === "correct",
-        answer: currentCard.answer,
-        explanation: currentCard.explanation,
-      });
-      setShowExplanation(true);
-    },
-    [currentCard, startTime]
-  );
+  const handleAnswer = useCallback(async (userAnswer: "O" | "X" | "confusing") => {
+    if (!currentCard) return;
+    let result: "correct" | "wrong" | "confusing";
+    if (userAnswer === "confusing") result = "confusing";
+    else result = userAnswer === currentCard.answer ? "correct" : "wrong";
+    const timeMs = Date.now() - startTime;
+    await processReview(currentCard.id, result, timeMs);
+    setSessionStats((prev) => ({
+      total: prev.total + 1,
+      correct: prev.correct + (result === "correct" ? 1 : 0),
+      wrong: prev.wrong + (result === "wrong" ? 1 : 0),
+      confusing: prev.confusing + (result === "confusing" ? 1 : 0),
+    }));
+    setLastResult({ correct: result === "correct", answer: currentCard.answer, explanation: currentCard.explanation });
+    setShowExplanation(true);
+  }, [currentCard, startTime]);
 
   const handleNext = useCallback(() => {
     setShowExplanation(false);
@@ -101,25 +69,24 @@ export default function StudyPage() {
     setStartTime(Date.now());
   }, []);
 
-  // Space/Enter to advance after explanation
   useEffect(() => {
     if (!showExplanation) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === " " || e.key === "Enter") {
-        e.preventDefault();
-        handleNext();
-      }
+      if (e.key === " " || e.key === "Enter") { e.preventDefault(); handleNext(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [showExplanation, handleNext]);
 
   const isFinished = currentIdx >= queue.length && queue.length > 0;
+  const progress = queue.length > 0 ? ((currentIdx + (showExplanation ? 1 : 0)) / queue.length) * 100 : 0;
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-slate-400 text-sm">로딩 중...</div>
+      <div className="flex flex-col items-center justify-center h-full gap-4">
+        <div className="w-8 h-8 rounded-full" style={{ border: "2.5px solid #e0e0e0", borderTopColor: "#111", animation: "spin 0.7s linear infinite" }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <span className="text-[13px] font-medium" style={{ color: "#aaa" }}>불러오는 중...</span>
       </div>
     );
   }
@@ -127,124 +94,100 @@ export default function StudyPage() {
   return (
     <div className="flex flex-col h-full max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0">
         <div>
-          <h1 className="text-lg font-bold text-slate-800">학습</h1>
+          <h1 className="text-[20px] font-bold" style={{ color: "#111" }}>학습</h1>
           {queue.length > 0 && !isFinished && (
-            <p className="text-xs text-slate-400">
-              {currentIdx + 1} / {queue.length}
-            </p>
+            <p className="text-[12px] font-medium mt-1" style={{ color: "#bbb" }}>{currentIdx + 1} / {queue.length}</p>
           )}
         </div>
         <select
           value={selectedDeck}
-          onChange={(e) => {
-            setSelectedDeck(e.target.value);
-            loadQueue(e.target.value || undefined);
-          }}
-          className="px-2 py-1 text-xs border border-slate-200 rounded-lg bg-white"
+          onChange={(e) => { setSelectedDeck(e.target.value); loadQueue(e.target.value || undefined); }}
+          className="px-3 py-2 text-[12px] font-medium rounded-xl bg-white border"
+          style={{ borderColor: "#e0e0e0", color: "#666" }}
         >
           <option value="">전체 덱</option>
-          {decks.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
+          {decks.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
         </select>
       </div>
 
-      {/* Session progress bar */}
+      {/* Progress */}
       {queue.length > 0 && !isFinished && (
-        <div className="px-4 flex-shrink-0">
-          <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-blue-500 transition-all duration-300"
-              style={{
-                width: `${((currentIdx + 1) / queue.length) * 100}%`,
-              }}
-            />
+        <div className="px-6 pb-2 flex-shrink-0">
+          <div className="h-[5px] rounded-full" style={{ background: "#e8e8e8" }}>
+            <div className="h-full rounded-full progress-bar" style={{ width: `${progress}%`, background: "#111" }} />
           </div>
         </div>
       )}
 
-      {/* Main area */}
+      {/* Main */}
       <div className="flex-1 relative overflow-hidden">
         {queue.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="text-4xl mb-4">🎉</div>
-            <h2 className="text-lg font-semibold text-slate-700 mb-1">
-              학습할 카드가 없습니다
-            </h2>
-            <p className="text-sm text-slate-400 text-center">
-              새 카드를 추가하거나 나중에 다시 와주세요
-            </p>
+          <div className="flex flex-col items-center justify-center h-full px-6 anim-up">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "#eee" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+            </div>
+            <h2 className="text-[18px] font-bold mb-2" style={{ color: "#111" }}>학습할 카드가 없습니다</h2>
+            <p className="text-[13px]" style={{ color: "#aaa" }}>새 카드를 추가하거나 나중에 다시 와주세요</p>
           </div>
         ) : isFinished ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div className="text-4xl mb-4">🎉</div>
-            <h2 className="text-lg font-semibold text-slate-700 mb-4">
-              학습 완료!
-            </h2>
-            <div className="grid grid-cols-3 gap-4 text-center mb-6">
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {sessionStats.correct}
-                </div>
-                <div className="text-xs text-slate-400">정답</div>
+          <div className="flex flex-col items-center justify-center h-full px-6 anim-up">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6 anim-bounce" style={{ background: "#f0f0f0" }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            <h2 className="text-[22px] font-bold mb-8" style={{ color: "#111" }}>학습 완료!</h2>
+            <div className="grid grid-cols-3 gap-5 text-center mb-8 w-full max-w-[280px]">
+              <div className="card p-4">
+                <div className="text-[24px] font-bold" style={{ color: "#111" }}>{sessionStats.correct}</div>
+                <div className="text-[11px] mt-1" style={{ color: "#aaa" }}>정답</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-red-500">
-                  {sessionStats.wrong}
-                </div>
-                <div className="text-xs text-slate-400">오답</div>
+              <div className="card p-4">
+                <div className="text-[24px] font-bold" style={{ color: "#111" }}>{sessionStats.wrong}</div>
+                <div className="text-[11px] mt-1" style={{ color: "#aaa" }}>오답</div>
               </div>
-              <div>
-                <div className="text-2xl font-bold text-amber-500">
-                  {sessionStats.confusing}
-                </div>
-                <div className="text-xs text-slate-400">헷갈림</div>
+              <div className="card p-4">
+                <div className="text-[24px] font-bold" style={{ color: "#111" }}>{sessionStats.confusing}</div>
+                <div className="text-[11px] mt-1" style={{ color: "#aaa" }}>헷갈림</div>
               </div>
             </div>
-            <div className="text-sm text-slate-500 mb-4">
-              정답률{" "}
-              {sessionStats.total > 0
-                ? Math.round(
-                    (sessionStats.correct / sessionStats.total) * 100
-                  )
-                : 0}
-              %
+            <div className="text-[14px] font-medium mb-8" style={{ color: "#888" }}>
+              정답률 <span className="text-[18px] font-bold" style={{ color: "#111" }}>{sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0}%</span>
             </div>
-            <button
-              onClick={() => loadQueue(selectedDeck || undefined)}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
-            >
+            <button onClick={() => loadQueue(selectedDeck || undefined)} className="btn-dark px-10 py-3.5 rounded-2xl text-[14px] font-bold">
               다시 학습
             </button>
           </div>
         ) : showExplanation && lastResult ? (
-          <div className="flex flex-col items-center justify-center h-full px-4">
-            <div
-              className={`text-5xl font-black mb-3 ${
-                lastResult.correct ? "text-green-500" : "text-red-500"
-              }`}
-            >
+          <div className="flex flex-col items-center justify-center h-full px-6 anim-scale">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center mb-5 anim-bounce" style={{ background: "#f0f0f0" }}>
+              {lastResult.correct ? (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+              ) : (
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+              )}
+            </div>
+            <div className="text-[28px] font-bold mb-3" style={{ color: "#111" }}>
               {lastResult.correct ? "정답!" : "오답!"}
             </div>
-            <div className="text-sm text-slate-500 mb-4">
-              정답: <span className="font-bold">{lastResult.answer}</span>
+            <div className="flex items-center gap-2 text-[14px] mb-6" style={{ color: "#888" }}>
+              정답:
+              <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl text-[16px] font-bold" style={{ background: "#f0f0f0", color: "#111" }}>
+                {lastResult.answer}
+              </span>
             </div>
             {lastResult.explanation && (
-              <div className="bg-white rounded-xl border border-slate-200 p-4 w-full max-w-sm mb-6">
-                <p className="text-sm text-slate-700 leading-relaxed break-keep">
-                  {lastResult.explanation}
-                </p>
+              <div className="card p-5 w-full max-w-sm mb-8">
+                <p className="text-[13px] leading-relaxed break-keep" style={{ color: "#555" }}>{lastResult.explanation}</p>
               </div>
             )}
-            <button
-              onClick={handleNext}
-              className="px-8 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors"
-            >
-              다음 카드 (Space)
+            <button onClick={handleNext} className="btn-dark px-12 py-3.5 rounded-2xl text-[14px] font-bold">
+              다음 카드 <span className="ml-2 text-[12px] font-normal" style={{ color: "#888" }}>Space</span>
             </button>
           </div>
         ) : currentCard ? (
@@ -261,31 +204,24 @@ export default function StudyPage() {
         ) : null}
       </div>
 
-      {/* Bottom action buttons (when card is shown) */}
+      {/* Bottom buttons (2번 사진 스타일 - 검정 둥근 버튼) */}
       {currentCard && !showExplanation && !isFinished && (
-        <div className="flex-shrink-0 p-4">
+        <div className="flex-shrink-0 px-6 pb-5 pt-3 anim-in">
           <div className="flex gap-3 max-w-sm mx-auto">
-            <button
-              onClick={() => handleAnswer("X")}
-              className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-bold text-lg transition-colors shadow-sm"
-            >
+            <button onClick={() => handleAnswer("X")} className="flex-1 py-3.5 rounded-2xl font-bold text-[16px] btn-dark active:scale-95">
               X
             </button>
-            <button
-              onClick={() => handleAnswer("confusing")}
-              className="flex-none px-4 py-3 bg-amber-400 hover:bg-amber-500 text-white rounded-xl font-bold text-sm transition-colors shadow-sm"
-            >
+            <button onClick={() => handleAnswer("confusing")} className="flex-none px-5 py-3.5 rounded-2xl font-bold text-[13px] btn-outline active:scale-95">
               ?
             </button>
-            <button
-              onClick={() => handleAnswer("O")}
-              className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white rounded-xl font-bold text-lg transition-colors shadow-sm"
-            >
+            <button onClick={() => handleAnswer("O")} className="flex-1 py-3.5 rounded-2xl font-bold text-[16px] btn-dark active:scale-95">
               O
             </button>
           </div>
-          <p className="text-center text-xs text-slate-300 mt-2">
-            키보드: ← X | ↓ ? | O → | Space 다음
+          <p className="text-center text-[11px] mt-3 font-medium" style={{ color: "#ccc" }}>
+            <kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>←</kbd> X
+            <span className="mx-4"><kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>↓</kbd> ?</span>
+            O <kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>→</kbd>
           </p>
         </div>
       )}

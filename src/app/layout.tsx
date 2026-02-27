@@ -14,7 +14,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#3b82f6",
+  themeColor: "#f2f2f2",
 };
 
 export default function RootLayout({
@@ -24,7 +24,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko">
-      <body className="flex flex-col h-screen bg-slate-50">
+      <body className="flex flex-col h-screen" style={{ background: "#f2f2f2" }}>
         <ServiceWorkerRegister />
         <main className="flex-1 overflow-y-auto">{children}</main>
         <BottomNav />
