@@ -128,18 +128,18 @@ export default function SwipeCard({
       >
         {/* 3번 사진 스타일 카드 */}
         <div
-          className="card rounded-3xl p-7 min-h-[340px] flex flex-col relative"
+          className="card rounded-3xl p-8 min-h-[420px] flex flex-col relative"
           style={{
             boxShadow: isRight
               ? `0 8px 40px rgba(0,0,0,${0.06 + swipeProgress * 0.1})`
               : isLeft
-              ? `0 8px 40px rgba(0,0,0,${0.06 + swipeProgress * 0.1})`
-              : "0 4px 24px rgba(0,0,0,0.06)",
+                ? `0 8px 40px rgba(0,0,0,${0.06 + swipeProgress * 0.1})`
+                : "0 4px 24px rgba(0,0,0,0.06)",
             border: isRight
               ? `2px solid rgba(0,0,0,${swipeProgress * 0.3})`
               : isLeft
-              ? `2px solid rgba(0,0,0,${swipeProgress * 0.3})`
-              : "2px solid transparent",
+                ? `2px solid rgba(0,0,0,${swipeProgress * 0.3})`
+                : "2px solid transparent",
             transition: isDragging ? "box-shadow 0.08s, border-color 0.08s" : "all 0.3s ease-out",
           }}
         >

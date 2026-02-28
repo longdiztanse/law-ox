@@ -51,9 +51,9 @@ export default function DecksPage() {
   const subjectLabel = (s: string) => SUBJECTS.find((x) => x.value === s)?.label || s;
 
   return (
-    <div className="px-6 pt-8 pb-28 max-w-lg mx-auto">
+    <div className="px-6 pt-12 pb-32 max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 anim-up">
+      <div className="flex items-center justify-between mb-10 anim-up">
         <h1 className="text-[22px] font-bold" style={{ color: "#111" }}>덱 관리</h1>
         <button
           onClick={() => { setShowForm(!showForm); setEditingId(null); setName(""); }}
@@ -94,11 +94,11 @@ export default function DecksPage() {
           <p className="text-[13px]" style={{ color: "#aaa" }}>아직 덱이 없습니다. 새 덱을 만들어보세요.</p>
         </div>
       ) : (
-        <div className="space-y-3 stagger">
+        <div className="space-y-4 stagger">
           {decks.map((deck) => {
             const count = deckCardCounts[deck.id] || 0;
             return (
-              <div key={deck.id} className="card p-5 anim-up">
+              <div key={deck.id} className="card p-6 anim-up">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: "#f5f5f5" }}>

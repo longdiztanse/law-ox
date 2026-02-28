@@ -76,9 +76,9 @@ export default function CardsPage() {
   const deckName = (id: string) => decks.find((d) => d.id === id)?.name || "—";
 
   return (
-    <div className="px-6 pt-8 pb-28 max-w-lg mx-auto">
+    <div className="px-6 pt-12 pb-32 max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-8 anim-up">
+      <div className="flex items-center justify-between mb-10 anim-up">
         <h1 className="text-[22px] font-bold" style={{ color: "#111" }}>카드 관리</h1>
         <button
           onClick={() => { if (!showForm) resetForm(); setShowForm(!showForm); }}
@@ -89,7 +89,7 @@ export default function CardsPage() {
       </div>
 
       {/* Filters (3번 사진 - pill 태그) */}
-      <div className="flex gap-2 mb-6 overflow-x-auto anim-up" style={{ animationDelay: "50ms" }}>
+      <div className="flex gap-3 mb-8 overflow-x-auto anim-up" style={{ animationDelay: "50ms" }}>
         <select
           value={filterDeck}
           onChange={(e) => setFilterDeck(e.target.value)}
@@ -175,9 +175,9 @@ export default function CardsPage() {
           </p>
         </div>
       ) : (
-        <div className="space-y-3 stagger">
+        <div className="space-y-4 stagger">
           {cards.map((card) => (
-            <div key={card.id} className="card p-5 anim-up">
+            <div key={card.id} className="card p-6 anim-up">
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2.5 mb-2">

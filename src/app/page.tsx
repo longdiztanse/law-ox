@@ -31,9 +31,9 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="px-6 pt-10 pb-8 max-w-lg mx-auto">
+    <div className="px-6 pt-12 pb-32 max-w-lg mx-auto">
       {/* Greeting (1번 사진 스타일) */}
-      <div className="mb-10 anim-up">
+      <div className="mb-12 anim-up">
         <h1 className="text-[28px] font-bold leading-tight tracking-tight" style={{ color: "#111" }}>
           안녕하세요,
         </h1>
@@ -43,8 +43,8 @@ export default function HomePage() {
       </div>
 
       {/* Menu Grid (1번 사진 - 2x2 카드 그리드) */}
-      <div className="grid grid-cols-2 gap-4 mb-8 stagger">
-        <Link href="/study" className="card p-5 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
+      <div className="grid grid-cols-2 gap-5 mb-10 stagger">
+        <Link href="/study" className="card p-6 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
           <div className="w-11 h-11 rounded-2xl bg-[#f5f5f5] flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -56,7 +56,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <Link href="/cards" className="card p-5 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
+        <Link href="/cards" className="card p-6 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
           <div className="w-11 h-11 rounded-2xl bg-[#f5f5f5] flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="3" width="20" height="14" rx="2" />
@@ -70,7 +70,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <Link href="/decks" className="card p-5 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
+        <Link href="/decks" className="card p-6 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
           <div className="w-11 h-11 rounded-2xl bg-[#f5f5f5] flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
@@ -83,7 +83,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <Link href="/stats" className="card p-5 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
+        <Link href="/stats" className="card p-6 flex flex-col gap-3 anim-up active:scale-[0.97] transition-transform">
           <div className="w-11 h-11 rounded-2xl bg-[#f5f5f5] flex items-center justify-center">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#111" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <line x1="18" y1="20" x2="18" y2="10" />
@@ -99,7 +99,7 @@ export default function HomePage() {
       </div>
 
       {/* Summary card */}
-      <div className="card p-6 mb-6 anim-up" style={{ animationDelay: "200ms" }}>
+      <div className="card p-7 mb-8 anim-up" style={{ animationDelay: "200ms" }}>
         <div className="text-[12px] font-semibold mb-5" style={{ color: "#aaa", letterSpacing: "0.5px" }}>
           오늘 현황
         </div>
@@ -121,7 +121,7 @@ export default function HomePage() {
 
       {/* Today stats */}
       {todayStats && todayStats.total > 0 && (
-        <div className="card p-6 mb-6 anim-up" style={{ animationDelay: "250ms" }}>
+        <div className="card p-7 mb-8 anim-up" style={{ animationDelay: "250ms" }}>
           <div className="text-[12px] font-semibold mb-5" style={{ color: "#aaa", letterSpacing: "0.5px" }}>
             오늘 학습
           </div>
@@ -161,7 +161,7 @@ export default function HomePage() {
       {/* Backup link */}
       <Link
         href="/backup"
-        className="flex items-center justify-center gap-1.5 mt-8 text-[12px] anim-in"
+        className="flex items-center justify-center gap-1.5 mt-10 text-[12px] anim-in"
         style={{ color: "#bbb", animationDelay: "400ms" }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">

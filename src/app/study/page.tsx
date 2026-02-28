@@ -94,7 +94,7 @@ export default function StudyPage() {
   return (
     <div className="flex flex-col h-full max-w-lg mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 pt-8 pb-4 flex-shrink-0">
+      <div className="flex items-center justify-between px-6 pt-12 pb-6 flex-shrink-0">
         <div>
           <h1 className="text-[20px] font-bold" style={{ color: "#111" }}>학습</h1>
           {queue.length > 0 && !isFinished && (
@@ -141,8 +141,8 @@ export default function StudyPage() {
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             </div>
-            <h2 className="text-[22px] font-bold mb-8" style={{ color: "#111" }}>학습 완료!</h2>
-            <div className="grid grid-cols-3 gap-5 text-center mb-8 w-full max-w-[280px]">
+            <h2 className="text-[22px] font-bold mb-10" style={{ color: "#111" }}>학습 완료!</h2>
+            <div className="grid grid-cols-3 gap-5 text-center mb-10 w-full max-w-[280px]">
               <div className="card p-4">
                 <div className="text-[24px] font-bold" style={{ color: "#111" }}>{sessionStats.correct}</div>
                 <div className="text-[11px] mt-1" style={{ color: "#aaa" }}>정답</div>
@@ -206,8 +206,8 @@ export default function StudyPage() {
 
       {/* Bottom buttons (2번 사진 스타일 - 검정 둥근 버튼) */}
       {currentCard && !showExplanation && !isFinished && (
-        <div className="flex-shrink-0 px-6 pb-5 pt-3 anim-in">
-          <div className="flex gap-3 max-w-sm mx-auto">
+        <div className="flex-shrink-0 px-6 pb-8 pt-6 anim-in">
+          <div className="flex gap-4 max-w-sm mx-auto">
             <button onClick={() => handleAnswer("X")} className="flex-1 py-3.5 rounded-2xl font-bold text-[16px] btn-dark active:scale-95">
               X
             </button>

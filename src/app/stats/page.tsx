@@ -19,17 +19,17 @@ export default function StatsPage() {
   }, []);
 
   return (
-    <div className="px-6 pt-8 pb-28 max-w-lg mx-auto">
-      <h1 className="text-[22px] font-bold mb-8 anim-up" style={{ color: "#111" }}>통계</h1>
+    <div className="px-6 pt-12 pb-32 max-w-lg mx-auto">
+      <h1 className="text-[22px] font-bold mb-10 anim-up" style={{ color: "#111" }}>통계</h1>
 
       {/* Today */}
-      <div className="card p-6 mb-5 anim-up" style={{ animationDelay: "60ms" }}>
+      <div className="card p-7 mb-8 anim-up" style={{ animationDelay: "60ms" }}>
         <div className="text-[12px] font-semibold mb-5" style={{ color: "#aaa", letterSpacing: "0.5px" }}>오늘 학습 현황</div>
         {!loaded ? (
           <div className="py-8 text-center text-[13px]" style={{ color: "#ccc" }}>로딩 중...</div>
         ) : today && today.total > 0 ? (
           <>
-            <div className="grid grid-cols-4 gap-2 text-center mb-6">
+            <div className="grid grid-cols-4 gap-4 text-center mb-8">
               <div className="rounded-2xl py-3" style={{ background: "#f8f8f8" }}>
                 <div className="text-[22px] font-bold" style={{ color: "#111" }}>{today.total}</div>
                 <div className="text-[10px] mt-1" style={{ color: "#aaa" }}>총 풀이</div>
@@ -67,13 +67,13 @@ export default function StatsPage() {
       </div>
 
       {/* Weak Tags */}
-      <div className="card p-6 anim-up" style={{ animationDelay: "120ms" }}>
+      <div className="card p-7 anim-up" style={{ animationDelay: "120ms" }}>
         <div className="flex items-center gap-2 mb-5">
           <div className="text-[12px] font-semibold" style={{ color: "#aaa", letterSpacing: "0.5px" }}>취약 태그</div>
           <div className="text-[10px]" style={{ color: "#ccc" }}>오답률 높은 순</div>
         </div>
         {weakTags.length > 0 ? (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {weakTags.map((wt, i) => (
               <div key={wt.tag} className="flex items-center justify-between py-3 px-2 rounded-xl hover:bg-[#fafafa] transition-colors">
                 <div className="flex items-center gap-3">

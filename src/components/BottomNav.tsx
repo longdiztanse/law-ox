@@ -68,14 +68,14 @@ export default function BottomNav() {
         borderRadius: "24px 24px 0 0",
       }}
     >
-      <div className="flex justify-around items-center h-16 max-w-lg mx-auto px-2">
+      <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
         {navItems.map((item) => {
           const active = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className="flex flex-col items-center gap-1 px-3 py-1.5"
+              className="flex flex-col items-center gap-1 px-4 py-2"
             >
               <span style={{ stroke: active ? "#fff" : "#666" }}>
                 {item.icon}
