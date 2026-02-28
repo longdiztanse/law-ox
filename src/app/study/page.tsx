@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { db, type Card, type Deck } from "@/lib/db";
 import { getDueCards, getNewCards, processReview } from "@/lib/srs";
 import SwipeCard from "@/components/SwipeCard";
@@ -19,6 +19,11 @@ export default function StudyPage() {
   const [sessionStats, setSessionStats] = useState({ total: 0, correct: 0, wrong: 0, confusing: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [startTime, setStartTime] = useState(0);
+  const [dragProgress, setDragProgress] = useState(0);
+
+  const handleDragProgress = useCallback((progress: number) => {
+    setDragProgress(progress);
+  }, []);
 
   const loadQueue = useCallback(async (deckId?: string) => {
     setIsLoading(true);
@@ -58,6 +63,7 @@ export default function StudyPage() {
       wrong: prev.wrong + (result === "wrong" ? 1 : 0),
       confusing: prev.confusing + (result === "confusing" ? 1 : 0),
     }));
+    setDragProgress(0);
     setLastResult({ correct: result === "correct", answer: currentCard.answer, explanation: currentCard.explanation });
     setShowExplanation(true);
   }, [currentCard, startTime]);
@@ -191,40 +197,33 @@ export default function StudyPage() {
             </button>
           </div>
         ) : currentCard ? (
-          <SwipeCard
-            statement={currentCard.statement}
-            cardType={currentCard.cardType}
-            subject={currentCard.subject}
-            index={currentIdx}
-            total={queue.length}
-            onSwipeRight={() => handleAnswer("O")}
-            onSwipeLeft={() => handleAnswer("X")}
-            onConfusing={() => handleAnswer("confusing")}
-          />
+          <div className="relative w-full h-full flex items-center justify-center">
+            {/* Render stack: deepest first for z-index */}
+            {[2, 1, 0].map((pos) => {
+              const cardIdx = currentIdx + pos;
+              if (cardIdx >= queue.length) return null;
+              const card = queue[cardIdx];
+              return (
+                <SwipeCard
+                  key={card.id}
+                  statement={card.statement}
+                  cardType={card.cardType}
+                  subject={card.subject}
+                  index={currentIdx}
+                  total={queue.length}
+                  stackPosition={pos}
+                  dragProgress={dragProgress}
+                  onDragProgress={pos === 0 ? handleDragProgress : undefined}
+                  onSwipeRight={() => handleAnswer("O")}
+                  onSwipeLeft={() => handleAnswer("X")}
+                  onConfusing={() => handleAnswer("confusing")}
+                />
+              );
+            })}
+          </div>
         ) : null}
       </div>
 
-      {/* Bottom buttons (2번 사진 스타일 - 검정 둥근 버튼) */}
-      {currentCard && !showExplanation && !isFinished && (
-        <div className="flex-shrink-0 px-6 pb-8 pt-6 anim-in">
-          <div className="flex gap-4 max-w-sm mx-auto">
-            <button onClick={() => handleAnswer("X")} className="flex-1 py-3.5 rounded-2xl font-bold text-[16px] btn-dark active:scale-95">
-              X
-            </button>
-            <button onClick={() => handleAnswer("confusing")} className="flex-none px-5 py-3.5 rounded-2xl font-bold text-[13px] btn-outline active:scale-95">
-              ?
-            </button>
-            <button onClick={() => handleAnswer("O")} className="flex-1 py-3.5 rounded-2xl font-bold text-[16px] btn-dark active:scale-95">
-              O
-            </button>
-          </div>
-          <p className="text-center text-[11px] mt-3 font-medium" style={{ color: "#ccc" }}>
-            <kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>←</kbd> X
-            <span className="mx-4"><kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>↓</kbd> ?</span>
-            O <kbd className="px-1.5 py-0.5 rounded text-[10px]" style={{ background: "#eee", color: "#aaa" }}>→</kbd>
-          </p>
-        </div>
-      )}
     </div>
   );
 }
