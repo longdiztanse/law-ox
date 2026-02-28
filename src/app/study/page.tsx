@@ -25,6 +25,29 @@ export default function StudyPage() {
     setDragProgress(progress);
   }, []);
 
+  const wrongIdsRef = useRef<Set<string>>(new Set());
+
+  const shuffle = <T,>(arr: T[]): T[] => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const startSession = useCallback((cards: Card[]) => {
+    const shuffled = shuffle(cards);
+    setQueue(shuffled);
+    setCurrentIdx(0);
+    setLastResult(null);
+    setShowExplanation(false);
+    setSessionStats({ total: 0, correct: 0, wrong: 0, confusing: 0 });
+    wrongIdsRef.current = new Set();
+    setIsLoading(false);
+    setStartTime(Date.now());
+  }, []);
+
   const loadQueue = useCallback(async (deckId?: string) => {
     setIsLoading(true);
     const dueIds = await getDueCards(deckId || undefined);
@@ -33,18 +56,26 @@ export default function StudyPage() {
     if (allIds.length === 0) { setQueue([]); setIsLoading(false); return; }
     const cards = await db.cards.bulkGet(allIds);
     const validCards = cards.filter(Boolean) as Card[];
-    for (let i = validCards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [validCards[i], validCards[j]] = [validCards[j], validCards[i]];
+    startSession(validCards);
+  }, [startSession]);
+
+  const loadAllFromDeck = useCallback(async (deckId?: string) => {
+    setIsLoading(true);
+    let cards: Card[];
+    if (deckId) {
+      cards = await db.cards.where("deckId").equals(deckId).toArray();
+    } else {
+      cards = await db.cards.toArray();
     }
-    setQueue(validCards);
-    setCurrentIdx(0);
-    setLastResult(null);
-    setShowExplanation(false);
-    setSessionStats({ total: 0, correct: 0, wrong: 0, confusing: 0 });
-    setIsLoading(false);
-    setStartTime(Date.now());
-  }, []);
+    if (cards.length === 0) { setQueue([]); setIsLoading(false); return; }
+    startSession(cards);
+  }, [startSession]);
+
+  const retryWrongOnly = useCallback(() => {
+    const wrongCards = queue.filter(c => wrongIdsRef.current.has(c.id));
+    if (wrongCards.length === 0) return;
+    startSession(wrongCards);
+  }, [queue, startSession]);
 
   useEffect(() => { db.decks.toArray().then(setDecks); loadQueue(); }, [loadQueue]);
 
@@ -57,6 +88,7 @@ export default function StudyPage() {
     else result = userAnswer === currentCard.answer ? "correct" : "wrong";
     const timeMs = Date.now() - startTime;
     await processReview(currentCard.id, result, timeMs);
+    if (result !== "correct") wrongIdsRef.current.add(currentCard.id);
     setSessionStats((prev) => ({
       total: prev.total + 1,
       correct: prev.correct + (result === "correct" ? 1 : 0),
@@ -138,7 +170,10 @@ export default function StudyPage() {
               </svg>
             </div>
             <h2 className="text-[18px] font-bold mb-2" style={{ color: "#111" }}>학습할 카드가 없습니다</h2>
-            <p className="text-[13px]" style={{ color: "#aaa" }}>새 카드를 추가하거나 나중에 다시 와주세요</p>
+            <p className="text-[13px] mb-6" style={{ color: "#aaa" }}>새 카드를 추가하거나 나중에 다시 와주세요</p>
+            <button onClick={() => loadAllFromDeck(selectedDeck || undefined)} className="btn-dark px-10 py-3.5 rounded-2xl text-[14px] font-bold">
+              전체 반복 학습
+            </button>
           </div>
         ) : isFinished ? (
           <div className="flex flex-col items-center justify-center h-full px-6 anim-up">
@@ -165,9 +200,19 @@ export default function StudyPage() {
             <div className="text-[14px] font-medium mb-8" style={{ color: "#888" }}>
               정답률 <span className="text-[18px] font-bold" style={{ color: "#111" }}>{sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0}%</span>
             </div>
-            <button onClick={() => loadQueue(selectedDeck || undefined)} className="btn-dark px-10 py-3.5 rounded-2xl text-[14px] font-bold">
-              다시 학습
-            </button>
+            <div className="flex flex-col gap-3 w-full max-w-[240px]">
+              <button onClick={() => loadAllFromDeck(selectedDeck || undefined)} className="btn-dark w-full py-3.5 rounded-2xl text-[14px] font-bold">
+                반복 학습
+              </button>
+              {wrongIdsRef.current.size > 0 && (
+                <button onClick={retryWrongOnly} className="btn-outline w-full py-3.5 rounded-2xl text-[14px] font-bold">
+                  오답만 복습 ({wrongIdsRef.current.size})
+                </button>
+              )}
+              <button onClick={() => loadQueue(selectedDeck || undefined)} className="w-full py-3 rounded-2xl text-[13px] font-medium" style={{ color: "#999" }}>
+                새 카드 학습
+              </button>
+            </div>
           </div>
         ) : showExplanation && lastResult ? (
           <div className="flex flex-col items-center justify-center h-full px-6 anim-scale">

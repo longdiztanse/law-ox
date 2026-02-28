@@ -88,14 +88,18 @@ export default function SwipeCard({
     }
   }, []);
 
-  const updateIndicators = useCallback((ox: number, progress: number) => {
+  const updateIndicators = useCallback((ox: number, oy: number, progress: number) => {
     if (!cardRef.current) return;
     const oEl = cardRef.current.querySelector("[data-indicator='O']") as HTMLElement;
     const xEl = cardRef.current.querySelector("[data-indicator='X']") as HTMLElement;
-    if (oEl) oEl.style.display = ox > 30 ? "flex" : "none";
-    if (xEl) xEl.style.display = ox < -30 ? "flex" : "none";
+    const qEl = cardRef.current.querySelector("[data-indicator='?']") as HTMLElement;
+    const isUp = oy < -30 && Math.abs(oy) > Math.abs(ox);
+    if (oEl) oEl.style.display = !isUp && ox > 30 ? "flex" : "none";
+    if (xEl) xEl.style.display = !isUp && ox < -30 ? "flex" : "none";
+    if (qEl) qEl.style.display = isUp ? "flex" : "none";
     if (oEl && ox > 30) oEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
     if (xEl && ox < -30) xEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
+    if (qEl && isUp) qEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
   }, []);
 
   const computeVelocity = useCallback(() => {
@@ -118,7 +122,7 @@ export default function SwipeCard({
     cardRef.current.style.transform = "";
     cardRef.current.style.opacity = "";
     setCardShadow(false, 0);
-    updateIndicators(0, 0);
+    updateIndicators(0, 0, 0);
     callbacksRef.current.onDragProgress?.(0);
   }, [setCardShadow, updateIndicators]);
 
@@ -135,7 +139,7 @@ export default function SwipeCard({
       spring.y += spring.vy;
 
       setCardTransform(spring.x, spring.y, 1);
-      updateIndicators(spring.x, Math.min(Math.abs(spring.x) / SWIPE_THRESHOLD, 1));
+      updateIndicators(spring.x, spring.y, Math.min(Math.abs(spring.x) / SWIPE_THRESHOLD, 1));
 
       const progress = Math.min(Math.abs(spring.x) / SWIPE_THRESHOLD, 1);
       callbacksRef.current.onDragProgress?.(progress);
@@ -153,18 +157,24 @@ export default function SwipeCard({
     step();
   }, [setCardTransform, updateIndicators, resetCard]);
 
-  const animateExit = useCallback((direction: "left" | "right", velocity: { vx: number; vy: number }) => {
+  const animateExit = useCallback((direction: "left" | "right" | "up", velocity: { vx: number; vy: number }) => {
     isAnimatingRef.current = true;
-    const minVx = 1.8;
-    const exitVx = Math.abs(velocity.vx) > minVx
-      ? velocity.vx
-      : (direction === "right" ? minVx : -minVx);
-
     const spring = springRef.current;
     spring.x = currentOffsetRef.current.x;
     spring.y = currentOffsetRef.current.y;
-    spring.vx = exitVx * 16;
-    spring.vy = velocity.vy * 16;
+
+    if (direction === "up") {
+      const minVy = 1.8;
+      spring.vx = velocity.vx * 16;
+      spring.vy = (Math.abs(velocity.vy) > minVy ? velocity.vy : -minVy) * 16;
+    } else {
+      const minVx = 1.8;
+      const exitVx = Math.abs(velocity.vx) > minVx
+        ? velocity.vx
+        : (direction === "right" ? minVx : -minVx);
+      spring.vx = exitVx * 16;
+      spring.vy = velocity.vy * 16;
+    }
 
     callbacksRef.current.onDragProgress?.(1);
 
@@ -174,14 +184,15 @@ export default function SwipeCard({
       spring.x += spring.vx;
       spring.y += spring.vy;
 
-      const dist = Math.abs(spring.x);
+      const dist = direction === "up" ? Math.abs(spring.y) : Math.abs(spring.x);
       const opacity = Math.max(1 - dist / 400, 0);
       setCardTransform(spring.x, spring.y, 1 - dist * 0.0003, opacity);
 
       if (dist > 500 || opacity <= 0) {
         cancelAnimationFrame(animFrameRef.current);
         if (direction === "right") callbacksRef.current.onSwipeRight();
-        else callbacksRef.current.onSwipeLeft();
+        else if (direction === "left") callbacksRef.current.onSwipeLeft();
+        else callbacksRef.current.onConfusing();
         return;
       }
 
@@ -211,10 +222,11 @@ export default function SwipeCard({
     const oy = (clientY - startYRef.current) * Y_DAMPING;
     currentOffsetRef.current = { x: ox, y: oy };
 
-    const progress = Math.min(Math.abs(ox) / SWIPE_THRESHOLD, 1);
+    const rawOy = oy / Y_DAMPING;
+    const progress = Math.min(Math.max(Math.abs(ox), Math.abs(rawOy)) / SWIPE_THRESHOLD, 1);
     setCardTransform(ox, oy - 6, 1.02);
     setCardShadow(true, progress);
-    updateIndicators(ox, progress);
+    updateIndicators(ox, oy - 6, progress);
 
     const now = performance.now();
     const hist = velocityRef.current.history;
@@ -230,13 +242,21 @@ export default function SwipeCard({
 
     const velocity = computeVelocity();
     const ox = currentOffsetRef.current.x;
-    const isFlick = Math.abs(velocity.vx) > VELOCITY_THRESHOLD;
-    const isPastThreshold = Math.abs(ox) > SWIPE_THRESHOLD;
+    const oy = currentOffsetRef.current.y;
+    const rawOy = oy / Y_DAMPING; // undo damping for threshold check
+    const isFlickX = Math.abs(velocity.vx) > VELOCITY_THRESHOLD;
+    const isFlickUp = velocity.vy < -VELOCITY_THRESHOLD;
+    const isPastThresholdX = Math.abs(ox) > SWIPE_THRESHOLD;
+    const isPastThresholdUp = rawOy < -SWIPE_THRESHOLD;
 
     setCardShadow(false, 0);
 
-    if (isFlick || isPastThreshold) {
-      const exitDir = isFlick
+    // Up swipe takes priority if vertical movement dominates
+    if ((isFlickUp || isPastThresholdUp) && Math.abs(rawOy) > Math.abs(ox)) {
+      isExitingRef.current = true;
+      animateExit("up", velocity);
+    } else if (isFlickX || isPastThresholdX) {
+      const exitDir = isFlickX
         ? (velocity.vx > 0 ? "right" : "left") as "right" | "left"
         : (ox > 0 ? "right" : "left") as "right" | "left";
       isExitingRef.current = true;
@@ -244,7 +264,7 @@ export default function SwipeCard({
     } else {
       springRef.current = {
         x: ox,
-        y: currentOffsetRef.current.y,
+        y: oy,
         vx: velocity.vx * 8,
         vy: velocity.vy * 8,
       };
@@ -301,8 +321,10 @@ export default function SwipeCard({
         isExitingRef.current = true;
         currentOffsetRef.current = { x: 0, y: 0 };
         animateExit("left", { vx: -2.5, vy: -0.1 });
-      } else if (e.key === "?" || e.key === "ArrowDown") {
-        onConfusing();
+      } else if (e.key === "?" || e.key === "ArrowUp") {
+        isExitingRef.current = true;
+        currentOffsetRef.current = { x: 0, y: 0 };
+        animateExit("up", { vx: 0, vy: -2.5 });
       }
     };
     window.addEventListener("keydown", handler);
@@ -387,6 +409,10 @@ export default function SwipeCard({
           <div data-indicator="X" className="absolute top-6 right-6 z-10 w-14 h-14 rounded-full items-center justify-center"
             style={{ display: "none", border: "3px solid rgba(0,0,0,0.3)", transform: "rotate(12deg)" }}>
             <span className="font-black text-2xl" style={{ color: "#111" }}>X</span>
+          </div>
+          <div data-indicator="?" className="absolute bottom-6 left-1/2 z-10 w-14 h-14 rounded-full items-center justify-center"
+            style={{ display: "none", border: "3px solid rgba(0,0,0,0.3)", transform: "translateX(-50%)" }}>
+            <span className="font-black text-2xl" style={{ color: "#111" }}>?</span>
           </div>
 
           {/* Header pills */}
