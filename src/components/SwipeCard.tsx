@@ -88,18 +88,19 @@ export default function SwipeCard({
     }
   }, []);
 
+  const backdropRef = useRef<HTMLDivElement>(null);
+  const backdropTextRef = useRef<HTMLSpanElement>(null);
+
   const updateIndicators = useCallback((ox: number, oy: number, progress: number) => {
-    if (!cardRef.current) return;
-    const oEl = cardRef.current.querySelector("[data-indicator='O']") as HTMLElement;
-    const xEl = cardRef.current.querySelector("[data-indicator='X']") as HTMLElement;
-    const qEl = cardRef.current.querySelector("[data-indicator='?']") as HTMLElement;
+    if (!backdropRef.current) return;
     const isUp = oy < -30 && Math.abs(oy) > Math.abs(ox);
-    if (oEl) oEl.style.display = !isUp && ox > 30 ? "flex" : "none";
-    if (xEl) xEl.style.display = !isUp && ox < -30 ? "flex" : "none";
-    if (qEl) qEl.style.display = isUp ? "flex" : "none";
-    if (oEl && ox > 30) oEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
-    if (xEl && ox < -30) xEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
-    if (qEl && isUp) qEl.style.borderColor = `rgba(0,0,0,${0.2 + progress * 0.6})`;
+    const isRight = !isUp && ox > 30;
+    const isLeft = !isUp && ox < -30;
+    const active = isRight || isLeft || isUp;
+    const label = isRight ? "O" : isLeft ? "X" : "?";
+
+    backdropRef.current.style.opacity = active ? String(Math.min(progress * 1.5, 1)) : "0";
+    if (backdropTextRef.current) backdropTextRef.current.textContent = label;
   }, []);
 
   const computeVelocity = useCallback(() => {
@@ -176,6 +177,10 @@ export default function SwipeCard({
       spring.vy = velocity.vy * 16;
     }
 
+    // Show backdrop immediately
+    const indicatorOx = direction === "right" ? 100 : direction === "left" ? -100 : 0;
+    const indicatorOy = direction === "up" ? -100 : 0;
+    updateIndicators(indicatorOx, indicatorOy, 1);
     callbacksRef.current.onDragProgress?.(1);
 
     function step() {
@@ -190,6 +195,7 @@ export default function SwipeCard({
 
       if (dist > 500 || opacity <= 0) {
         cancelAnimationFrame(animFrameRef.current);
+        updateIndicators(0, 0, 0);
         if (direction === "right") callbacksRef.current.onSwipeRight();
         else if (direction === "left") callbacksRef.current.onSwipeLeft();
         else callbacksRef.current.onConfusing();
@@ -200,7 +206,7 @@ export default function SwipeCard({
     }
 
     step();
-  }, [setCardTransform]);
+  }, [setCardTransform, updateIndicators]);
 
   const handleStart = useCallback((clientX: number, clientY: number) => {
     if (isExitingRef.current || isAnimatingRef.current) return;
@@ -381,6 +387,21 @@ export default function SwipeCard({
   // --- Top card (interactive) ---
   return (
     <div className="relative w-full h-full flex items-center justify-center">
+      {/* Backdrop — same size as card, behind it */}
+      <div
+        ref={backdropRef}
+        className="absolute w-[88%] max-w-md rounded-3xl min-h-[420px] flex items-center justify-center"
+        style={{
+          zIndex: 9,
+          background: "#111",
+          opacity: 0,
+          transition: "opacity 0.1s",
+        }}
+      >
+        <span ref={backdropTextRef} className="text-[64px] font-black" style={{ color: "#fff" }}></span>
+      </div>
+
+      {/* Interactive card */}
       <div
         ref={cardRef}
         className="absolute w-[88%] max-w-md cursor-grab active:cursor-grabbing select-none"
@@ -401,20 +422,6 @@ export default function SwipeCard({
             border: "2px solid transparent",
           }}
         >
-          {/* Swipe indicators */}
-          <div data-indicator="O" className="absolute top-6 left-6 z-10 w-14 h-14 rounded-full items-center justify-center"
-            style={{ display: "none", border: "3px solid rgba(0,0,0,0.3)", transform: "rotate(-12deg)" }}>
-            <span className="font-black text-2xl" style={{ color: "#111" }}>O</span>
-          </div>
-          <div data-indicator="X" className="absolute top-6 right-6 z-10 w-14 h-14 rounded-full items-center justify-center"
-            style={{ display: "none", border: "3px solid rgba(0,0,0,0.3)", transform: "rotate(12deg)" }}>
-            <span className="font-black text-2xl" style={{ color: "#111" }}>X</span>
-          </div>
-          <div data-indicator="?" className="absolute bottom-6 left-1/2 z-10 w-14 h-14 rounded-full items-center justify-center"
-            style={{ display: "none", border: "3px solid rgba(0,0,0,0.3)", transform: "translateX(-50%)" }}>
-            <span className="font-black text-2xl" style={{ color: "#111" }}>?</span>
-          </div>
-
           {/* Header pills */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex gap-2">
