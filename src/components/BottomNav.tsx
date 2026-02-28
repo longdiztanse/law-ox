@@ -68,7 +68,7 @@ export default function BottomNav() {
         borderRadius: "24px 24px 0 0",
       }}
     >
-      <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2">
+      <div className="flex justify-around items-center h-20 max-w-lg mx-auto px-2 pb-4">
         {navItems.map((item) => {
           const active = pathname === item.href;
           return (
